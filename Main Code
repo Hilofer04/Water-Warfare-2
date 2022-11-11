@@ -1,0 +1,372 @@
+import sys, pygame
+
+
+pygame.init()
+
+BLACK = (0, 0, 0)
+IMAGE_SIZE = (800, 500)
+CHARACTER_SIZE = (100, 100)
+WHITE = (255,255,255)
+RED = (255,0,0)
+GREEN = (0,255,0)
+
+#Start Menu
+Screen_Height = 704
+Screen_Width = 1200
+startbutton_size = (280,150)
+quit_button_size = (245,110)
+welcomeimg_size = (800,300)
+
+screen_width = 1200
+screen_height = 704
+screen = pygame.display.set_mode((screen_width, screen_height))
+clock = pygame.time.Clock()
+game_active = True
+enemy1_status = True
+enemy2_status = False
+boss_status = False
+# List that contains all active bullets
+bullets = []
+enemy_bullets = []
+# Enemy stats
+enemy1_pos = 100
+enemy1_speed = 2
+enemy2_speed = 11
+boss_speed = 13
+shooting_time = 0
+player_health = 250
+enemy1_health = 250
+enemy2_health = 250
+boss_health = 250
+score = 0
+
+# Fonts for texts
+my_font = pygame.font.SysFont('Comic Sans MS', 80)
+score_font = pygame.font.SysFont('leelawadeeui', 50)
+health_font = pygame.font.SysFont('javanesetext', 20)
+enemy_health_font = pygame.font.SysFont('javanesetext', 20)
+
+#Window for start menu
+screen = pygame.display.set_mode((Screen_Width, Screen_Height))
+pygame.display.set_caption('Water Warfare 2')
+
+
+# Images used
+player = pygame.image.load("\\Users\\hilof\\OneDrive\\Pictures\\Player.png")
+player = pygame.transform.scale(player, CHARACTER_SIZE)
+background = pygame.image.load("\\Users\\hilof\\Downloads\\Background.png")
+background = pygame.transform.scale(background, (screen_width, screen_height))
+enemy1 = pygame.image.load("\\Users\\hilof\\Downloads\\Enemy 1.png")
+enemy1 = pygame.transform.scale(enemy1, CHARACTER_SIZE)
+enemy2 = pygame.image.load("\\Users\\hilof\\Downloads\\Enemy 2.png")
+enemy2 = pygame.transform.scale(enemy2, CHARACTER_SIZE)
+final_boss = pygame.image.load("\\Users\\hilof\\Downloads\\Enemy 1.png")
+final_boss = pygame.transform.scale(final_boss, CHARACTER_SIZE)
+you_win = pygame.image.load("\\Users\\hilof\\Downloads\\You Win screen.png") 
+you_win = pygame.transform.scale(you_win, (screen_width, screen_height))
+
+
+text_surface = my_font.render('BIG L', False, (0, 0, 0))
+my_Health = health_font.render('Your Health', False, (0, 0, 0))
+restart_surf = pygame.image.load("\\Users\\hilof\\Downloads\\Game over.png")
+enemy_health = health_font.render('Enemy health', False, (0, 0, 0))
+
+
+#Start Menu Load Images
+start_img = pygame.image.load("\\Users\\hilof\\Downloads\\Start Button.png").convert_alpha()
+start_img = pygame.transform.scale(start_img, startbutton_size)
+quit_img = pygame.image.load("\\Users\\hilof\\Downloads\\Exit Button.png").convert_alpha()
+quit_img = pygame.transform.scale(quit_img, quit_button_size)
+welcome_img = pygame.image.load("\\Users\\hilof\\Downloads\\Water Warfare 2.png")
+welcome_img = pygame.transform.scale(welcome_img, welcomeimg_size)
+
+
+# Rectangles
+position = player.get_rect(bottomright = (80, 300))
+enemy1_rect = enemy1.get_rect(midbottom = (1000, 300))
+enemy2_rect = enemy2.get_rect(midbottom = (1000, 300))
+final_boss_rect = final_boss.get_rect(midbottom = (1000, 300))
+restart_rect = restart_surf.get_rect(center = (585, 400))
+you_win_rect = you_win.get_rect(center = (585, 400))
+
+player_size = position.size
+enemy1_size = enemy1_rect.size
+enemy2_size = enemy2_rect.size
+final_boss_size = final_boss_rect.size
+
+
+pygame.display.update()
+
+
+
+
+
+
+class Button():
+
+    def __init__(self, x, y, image):
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x,y)
+        self.clicked = False
+
+    def draw(self, surface):
+        action = False
+        #get mouse position
+        pos = pygame.mouse.get_pos()
+
+        #check mouseover and clicked conditions
+        if self.rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+                self.clicked = True
+                action = True
+
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
+
+        #draw button on screen
+        surface.blit(self.image, (self.rect.x, self.rect.y))
+        return action
+
+#create button/Welcome text instances
+start_button = Button(250, 392, start_img)
+quit_button = Button(700, 410, quit_img)
+welcome_text = Button(220, 70, welcome_img)
+run = True
+
+while run:
+    screen.fill((202, 228, 241))
+    if start_button.draw(screen):
+        run = False
+    if welcome_text.draw(screen):
+        pass
+    if quit_button.draw(screen):
+        sys.exit()
+    for event in pygame.event.get():    
+        pygame.display.update()
+
+class Projectile(object):
+    def __init__(self,x,y,radius,color):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.color = color
+        self.vel = 15
+
+    def draw(self,screen):
+        pygame.draw.circle(screen, self.color, (self.x,self.y), self.radius)
+    
+def enemy_shooting(enemy_pos):
+    enemy_bullets.append(Projectile(round(enemy_pos.x + enemy_pos.width //2), round(enemy_pos.y + enemy_pos.height//2), 6, (255,255,255)))
+
+
+while True:
+    mouse_pos = pygame.mouse.get_pos()
+    keys = pygame.key.get_pressed()
+    delay = pygame.time.get_ticks() / 1000
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
+
+        if game_active == False:
+
+            # Restart the game with spacebar
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                game_active = True
+                position.left = 50
+                enemy1_rect = enemy1.get_rect(midbottom = (1000, 300))
+                position = player.get_rect(bottomright = (80, 300))
+                player_health = 250
+                enemy_bullets = []
+                enemy1_status = True
+                enemy2_status = False
+                boss_status = False
+                enemy1_health = 250
+                enemy2_health = 250
+                boss_health = 250
+
+            # Restart the game with the mouse
+            elif restart_rect.collidepoint(mouse_pos):
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    game_active = True
+                    position.left = 50
+                    player_health = 250
+                    enemy_bullets = []
+                    bullets = []
+                    enemy1_rect = enemy1.get_rect(midbottom = (1000, 300))
+                    position = player.get_rect(bottomright = (80, 300))
+                    enemy1_status = True
+                    enemy2_status = False
+                    boss_status = False
+                    enemy1_health = 250
+                    enemy2_health = 250
+                    boss_health = 250
+    
+    # In-game activities
+    if game_active:
+                
+        if enemy1_health > 0 and enemy1_status:
+            delay_e = pygame.time.get_ticks()/1000
+    
+            # Make the enemy move up and down
+            if (enemy1_rect.y + enemy1_size[0] >= screen_height) or (enemy1_rect.y < 0):
+                enemy1_speed = -enemy1_speed
+         
+            if(delay_e % 0.1)>0.09:
+                enemy_shooting(enemy1_rect)
+        
+        if enemy2_health > 0 and enemy2_status:
+            delay_e = pygame.time.get_ticks()/1000
+
+            #if (enemy2_rect.y + enemy2_size[0] >= screen_height) or (enemy2_rect.y < 0):
+                #enemy2_speed = -enemy2_speed
+
+            if(delay_e % 0.1)>0.09:
+                enemy_shooting(enemy2_rect)
+
+        if boss_health > 0 and boss_status:
+            delay_e = pygame.time.get_ticks()/1000
+
+            #if (final_boss_rect.y + final_boss_size[0] >= screen_height) or (final_boss_rect.y < 0):
+                #boss_speed = -boss_speed
+            
+            if(delay_e % 0.1)>0.09:
+                enemy_shooting(final_boss_rect)
+
+        # Make the enemy move up and down
+        
+        if (enemy2_rect.y + enemy2_size[0] >= screen_height) or (enemy2_rect.y < 0):
+            enemy2_speed = -enemy2_speed
+        
+        if (final_boss_rect.y + final_boss_size[0] >= screen_height) or (final_boss_rect.y < 0):
+            boss_speed = -boss_speed
+        
+        # Movement commands
+        if keys[pygame.K_UP]:
+            position = position.move(0, -4)
+        elif keys[pygame.K_DOWN]:
+            position = position.move(0, 4)
+        elif keys[pygame.K_LEFT]:
+            position = position.move(-4, 0)
+        elif keys[pygame.K_RIGHT]:
+            position = position.move(4, 0)
+        
+        if position.y  < 0:
+            position.y = 0
+        elif position.y >= 604: # man kan ta 700 då man tar Image size minus character size, annars hamnar charcter outside screen.
+            position.y = 604
+        
+        if position.x <=0:
+            position.x = 0
+        elif position.x >=1100: # man kan ta 700 då man tar Image size minus character size, annars hamnar charcter outside screen.
+            position.x = 1100
+        
+        if enemy1_status:
+            for bullet in bullets:
+                if bullet.y - bullet.radius < enemy1_rect.y + enemy1_size[0] and bullet.y + bullet.radius > enemy1_rect.y:
+                    if bullet.x + bullet.radius > enemy1_rect.x and bullet.x - bullet.radius < enemy1_rect.x + enemy1_size[0]:
+                        enemy1_health = enemy1_health - 5
+        
+        if enemy2_status:
+            for bullet in bullets:
+                if bullet.y - bullet.radius < enemy2_rect.y + enemy2_size[0] and bullet.y + bullet.radius > enemy2_rect.y:
+                    if bullet.x + bullet.radius > enemy2_rect.x and bullet.x - bullet.radius < enemy2_rect.x + enemy2_size[0]:
+                        enemy2_health = enemy2_health - 5
+        
+        if boss_status:
+            for bullet in bullets:
+                if bullet.y - bullet.radius < final_boss_rect.y + final_boss_size[0] and bullet.y + bullet.radius > final_boss_rect.y:
+                    if bullet.x + bullet.radius > final_boss_rect.x and bullet.x - bullet.radius < final_boss_rect.x + final_boss_size[0]:
+                        boss_health = boss_health - 3
+        
+        for bullet in enemy_bullets:
+            if bullet.y - bullet.radius < position.y + enemy1_size[0] and bullet.y + bullet.radius > position.y:
+                if bullet.x + bullet.radius > position.x and bullet.x - bullet.radius < position.x + enemy1_size[0]:
+                    player_health = player_health - 3
+        
+        if player_health < 1:
+            game_active = False
+
+        if enemy1_health < 1:
+            enemy1_status = False
+            enemy2_status = True
+        
+        if enemy2_health < 1:
+            enemy2_status = False
+            boss_status = True
+        
+        if boss_health < 1:
+            game_active = False
+
+        # Enemy movement
+        enemy1_rect.y += enemy1_speed
+        enemy2_rect.y += enemy2_speed 
+        final_boss_rect.y += boss_speed
+
+        # Shooting mechanics 
+        for bullet in bullets:
+            if bullet.x < 1200 and bullet.x > 0:
+                bullet.x += bullet.vel  # Moves the bullet by its vel
+            else:
+                bullets.pop(bullets.index(bullet))
+        
+        for bullet in enemy_bullets:
+            if bullet.x < 1200 and bullet.x > 0:
+                bullet.x -= bullet.vel
+            else:
+                enemy_bullets.pop(enemy_bullets.index(bullet))
+        
+        if keys[pygame.K_SPACE]:
+            if (delay % 0.02 ) > 0.015 and len(bullets) < 8:
+                bullets.append(Projectile(round(position.x + position.width //2), round(position.y + position.height//2), 6, (255,255,255)))
+
+
+        screen.fill(BLACK)
+
+        # End game if player collides with enemy
+        if position.colliderect(enemy1_rect):
+            game_active = False
+        if position.colliderect(enemy2_rect):
+            game_active = False
+        if position.colliderect(final_boss_rect):
+            game_active = False
+
+        # Draw on the screen
+        screen.blit(background, (0, 0)) 
+        screen.blit(player, position)
+        # Player health
+        pygame.draw.rect(screen,RED, (50,25,250,5))
+        pygame.draw.rect(screen,GREEN, (50,25,player_health,5))
+        screen.blit(my_Health, (50,0))
+        # Enemy health
+        pygame.draw.rect(screen,RED, (920,25,250,5))
+        screen.blit(enemy_health, (920,0))
+        if enemy1_status == True:
+            screen.blit(enemy1, enemy1_rect)
+            pygame.draw.rect(screen,GREEN, (920,25,enemy1_health,5))
+        if enemy2_status == True:
+            screen.blit(enemy2, enemy2_rect)
+            pygame.draw.rect(screen,GREEN, (920,25,enemy2_health,5)) 
+        if boss_status == True:
+            screen.blit(final_boss, final_boss_rect)
+            pygame.draw.rect(screen, GREEN, (920,25,boss_health,5))
+            
+        for bullet in bullets:
+            bullet.draw(screen)
+        for bullet in enemy_bullets:
+            bullet.draw(screen)
+
+    # Game-over screen
+    else:
+        if boss_health > 0:
+            screen.fill('PINK')
+            screen.blit(text_surface, (490, 200))
+            screen.blit(restart_surf, restart_rect) 
+        else:
+            screen.fill('PINK')
+            screen.blit(you_win, (470, 200))
+            screen.blit(restart_surf, restart_rect) 
+        
+    pygame.display.update()
+    clock.tick(60)
