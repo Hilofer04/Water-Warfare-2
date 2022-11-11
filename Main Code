@@ -1,6 +1,5 @@
 import sys, pygame
 
-
 pygame.init()
 
 BLACK = (0, 0, 0)
@@ -40,6 +39,8 @@ enemy2_health = 250
 boss_health = 250
 score = 0
 
+
+
 # Fonts for texts
 my_font = pygame.font.SysFont('Comic Sans MS', 80)
 score_font = pygame.font.SysFont('leelawadeeui', 50)
@@ -52,34 +53,37 @@ pygame.display.set_caption('Water Warfare 2')
 
 
 # Images used
-player = pygame.image.load("\\Users\\hilof\\OneDrive\\Pictures\\Player.png")
+player = pygame.image.load("jordan.png")
 player = pygame.transform.scale(player, CHARACTER_SIZE)
-background = pygame.image.load("\\Users\\hilof\\Downloads\\Background.png")
+background = pygame.image.load("g.png")
 background = pygame.transform.scale(background, (screen_width, screen_height))
-enemy1 = pygame.image.load("\\Users\\hilof\\Downloads\\Enemy 1.png")
+enemy1 = pygame.image.load("CT.webp")
 enemy1 = pygame.transform.scale(enemy1, CHARACTER_SIZE)
-enemy2 = pygame.image.load("\\Users\\hilof\\Downloads\\Enemy 2.png")
+enemy2 = pygame.image.load("badguy.png")
 enemy2 = pygame.transform.scale(enemy2, CHARACTER_SIZE)
-final_boss = pygame.image.load("\\Users\\hilof\\Downloads\\Enemy 1.png")
+final_boss = pygame.image.load("boss.png")
 final_boss = pygame.transform.scale(final_boss, CHARACTER_SIZE)
-you_win = pygame.image.load("\\Users\\hilof\\Downloads\\You Win screen.png") 
-you_win = pygame.transform.scale(you_win, (screen_width, screen_height))
+text_surface = my_font.render('FAT L', False, (0, 0, 0))
+win_surface = my_font.render('BIG W', False, (0,0,0))
+restart_surf = pygame.image.load("restart.png")
+enemy_health_font = health_font.render('Enemy health', False, (0,0,0))
+my_health = health_font.render('Your health', False, (0,0,0))
+you_win = pygame.image.load("boss.png")
 
-
-text_surface = my_font.render('BIG L', False, (0, 0, 0))
-my_Health = health_font.render('Your Health', False, (0, 0, 0))
-restart_surf = pygame.image.load("\\Users\\hilof\\Downloads\\Game over.png")
-enemy_health = health_font.render('Enemy health', False, (0, 0, 0))
-
-
-#Start Menu Load Images
-start_img = pygame.image.load("\\Users\\hilof\\Downloads\\Start Button.png").convert_alpha()
+start_img = pygame.image.load("Start Button.png").convert_alpha()
 start_img = pygame.transform.scale(start_img, startbutton_size)
-quit_img = pygame.image.load("\\Users\\hilof\\Downloads\\Exit Button.png").convert_alpha()
+quit_img = pygame.image.load("Exit Button.png").convert_alpha()
 quit_img = pygame.transform.scale(quit_img, quit_button_size)
-welcome_img = pygame.image.load("\\Users\\hilof\\Downloads\\Water Warfare 2.png")
+welcome_img = pygame.image.load("Water Warfare 2.png")
 welcome_img = pygame.transform.scale(welcome_img, welcomeimg_size)
 
+#Start Menu Load Images
+start_img = pygame.image.load("Start Button.png").convert_alpha()
+start_img = pygame.transform.scale(start_img, startbutton_size)
+quit_img = pygame.image.load("Exit Button.png").convert_alpha()
+quit_img = pygame.transform.scale(quit_img, quit_button_size)
+welcome_img = pygame.image.load("Water Warfare 2.png")
+welcome_img = pygame.transform.scale(welcome_img, welcomeimg_size)
 
 # Rectangles
 position = player.get_rect(bottomright = (80, 300))
@@ -97,13 +101,14 @@ final_boss_size = final_boss_rect.size
 
 pygame.display.update()
 
-
-
+def display_score():
+    score_surf = score_font.render('Score: 'f'{score}', False, (64,64,64))
+    score_rect = score_surf.get_rect(center = (600, 20))
+    screen.blit(score_surf, score_rect)
 
 
 
 class Button():
-
     def __init__(self, x, y, image):
         self.image = image
         self.rect = self.image.get_rect()
@@ -164,6 +169,7 @@ while True:
     mouse_pos = pygame.mouse.get_pos()
     keys = pygame.key.get_pressed()
     delay = pygame.time.get_ticks() / 1000
+    score += round(pygame.time.get_ticks() / 1000)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -278,7 +284,7 @@ while True:
             for bullet in bullets:
                 if bullet.y - bullet.radius < final_boss_rect.y + final_boss_size[0] and bullet.y + bullet.radius > final_boss_rect.y:
                     if bullet.x + bullet.radius > final_boss_rect.x and bullet.x - bullet.radius < final_boss_rect.x + final_boss_size[0]:
-                        boss_health = boss_health - 3
+                        boss_health = boss_health - 4
         
         for bullet in enemy_bullets:
             if bullet.y - bullet.radius < position.y + enemy1_size[0] and bullet.y + bullet.radius > position.y:
@@ -287,17 +293,21 @@ while True:
         
         if player_health < 1:
             game_active = False
+            score = 0
 
         if enemy1_health < 1:
             enemy1_status = False
             enemy2_status = True
+            score += 500
         
         if enemy2_health < 1:
             enemy2_status = False
             boss_status = True
+            score += 1000
         
         if boss_health < 1:
             game_active = False
+            score += 2000
 
         # Enemy movement
         enemy1_rect.y += enemy1_speed
@@ -338,10 +348,10 @@ while True:
         # Player health
         pygame.draw.rect(screen,RED, (50,25,250,5))
         pygame.draw.rect(screen,GREEN, (50,25,player_health,5))
-        screen.blit(my_Health, (50,0))
+        screen.blit(my_health, (50,0))
         # Enemy health
         pygame.draw.rect(screen,RED, (920,25,250,5))
-        screen.blit(enemy_health, (920,0))
+        screen.blit(enemy_health_font, (920,0))
         if enemy1_status == True:
             screen.blit(enemy1, enemy1_rect)
             pygame.draw.rect(screen,GREEN, (920,25,enemy1_health,5))
@@ -351,7 +361,7 @@ while True:
         if boss_status == True:
             screen.blit(final_boss, final_boss_rect)
             pygame.draw.rect(screen, GREEN, (920,25,boss_health,5))
-            
+        display_score()
         for bullet in bullets:
             bullet.draw(screen)
         for bullet in enemy_bullets:
